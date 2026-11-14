@@ -91,6 +91,7 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFamilygroupsS
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesParentalSteamclient
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient
 import app.gamenative.data.SteamCollectionRepository
+import app.gamenative.shadercache.FossilizeManager
 import app.gamenative.steam.CloudConfigStoreService
 import app.gamenative.steam.SteamCollectionParser
 import `in`.dragonbra.javasteam.rpc.service.FamilyGroups
@@ -159,6 +160,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -352,10 +354,17 @@ class SteamService : Service(), IChallengeUrlChanged {
     /** steamId64 → display name for family members when known */
     private val familyMemberNames: ConcurrentHashMap<Long, String> = ConcurrentHashMap()
 
-    // EParentalFeature.Library: when this bit is set in enabled_features the whole library is allowed.
-    private val PARENTAL_FEATURE_LIBRARY = 11
-
     sealed class ParentalState {
+        companion object {
+            // EParentalFeature.Library: when this bit is set in enabled_features the whole library is allowed.
+            private const val PARENTAL_FEATURE_LIBRARY = 11
+
+            // Only a child member of a Steam family is held to the allowlist. An adult with Family View on
+            // their own account unlocks it with a PIN in Steam, and the app has no PIN entry.
+            fun restrictsLibrary(isChildMember: Boolean, isEnabled: Boolean, enabledFeatures: Int): Boolean =
+                isChildMember && isEnabled && (enabledFeatures and (1 shl PARENTAL_FEATURE_LIBRARY)) == 0
+        }
+
         data object Loading : ParentalState()
         data object Unrestricted : ParentalState()
         data class Restricted(val allowedAppIds: Set<Int>) : ParentalState()
@@ -2122,6 +2131,7 @@ class SteamService : Service(), IChallengeUrlChanged {
         suspend fun deleteApp(appId: Int): Boolean = withContext(Dispatchers.IO) {
             // the close-time cloud sync uploads out of this install dir; deleting mid-upload leaves it half sent.
             CloseSyncTracker.awaitIdle(CloseSyncTracker.keyOf(GameSource.STEAM, appId))
+            instance?.let { FossilizeManager.dropStagedPool(it.applicationContext, "steam", appId.toString()) }
             // snapshot path before marker removal (removing the marker changes resolution)
             val appInfo = getInstalledApp(appId)
             val result = if (appInfo?.isImported == true) {
@@ -3154,6 +3164,7 @@ class SteamService : Service(), IChallengeUrlChanged {
                                 PluviaApp.events.emit(AndroidEvent.PostInstallSyncStatusChanged(appId, false))
                             }
                         }
+                        FossilizeManager.downloadPoolDuringInstall(svc.applicationContext, downloadInfo, containerId, "steam", appId.toString())
                     } else {
                         Timber.d("Skipped container creation Lossless Scaling")
                         PluviaApp.events.emit(AndroidEvent.PostInstallSyncStatusChanged(appId, false))
@@ -4851,6 +4862,8 @@ class SteamService : Service(), IChallengeUrlChanged {
 
                 // Request family share info if we have a familyGroupId.
                 // Set id synchronously so UI can observe hydration before the RPC finishes.
+                // null = the family group lookup failed, so the role is unknown
+                val isChildMember = CompletableDeferred<Boolean?>()
                 if (callback.familyGroupId != 0L) {
                     setFamilyGroupId(callback.familyGroupId)
                     scope.launch {
@@ -4874,11 +4887,20 @@ class SteamService : Service(), IChallengeUrlChanged {
                                 val accountID = steamId.accountID.toInt()
                                 familyGroupMembers.add(accountID)
                             }
+
+                            val ownSteamId = steamClient?.steamID?.convertToUInt64()
+                            isChildMember.complete(
+                                response.membersList.any { member ->
+                                    member.steamid == ownSteamId &&
+                                        member.role == SteammessagesFamilygroupsSteamclient.EFamilyGroupRole.k_EFamilyGroupRole_Child
+                                },
+                            )
                         }
 
                         refreshFamilyPreferredCopyData()
-                    }
+                    }.invokeOnCompletion { isChildMember.complete(null) }
                 } else {
+                    isChildMember.complete(false)
                     setFamilyGroupId(0L)
                     familyGroupMembers.clear()
                     familyAppOwnerSteamIds.clear()
@@ -4906,9 +4928,15 @@ class SteamService : Service(), IChallengeUrlChanged {
                         }
 
                         val settings = it.body.settings
-                        val libraryUnlocked = (settings.enabledFeatures and (1 shl PARENTAL_FEATURE_LIBRARY)) != 0
-                        if (!settings.isEnabled || libraryUnlocked) {
-                            Timber.i("Parental controls not restricting the library (enabled=${settings.isEnabled}, features=${settings.enabledFeatures}).")
+                        val isChild = isChildMember.await()
+                        if (steamClient?.steamID != sessionSteamId) return@launch
+                        if (isChild == null) {
+                            Timber.w("Family role unknown, parental state left as it was.")
+                            return@launch
+                        }
+
+                        if (!ParentalState.restrictsLibrary(isChild, settings.isEnabled, settings.enabledFeatures)) {
+                            Timber.i("Parental controls not restricting the library (child=$isChild, enabled=${settings.isEnabled}, features=${settings.enabledFeatures}).")
                             parentalState = ParentalState.Unrestricted
                             PrefManager.parentalAllowedAppIds = null
                         } else {

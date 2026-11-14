@@ -81,6 +81,7 @@ import app.gamenative.R
 import app.gamenative.optimize.OptimizeCards
 import app.gamenative.optimize.OptimizeController
 import app.gamenative.shadercache.FossilizeManager
+import app.gamenative.ui.theme.ThemedAlertDialog
 import app.gamenative.ui.util.applyScreenEffectsConfig
 import app.gamenative.ui.util.loadScreenEffectsConfig
 import androidx.core.content.ContextCompat
@@ -156,6 +157,7 @@ import app.gamenative.utils.GuestOutputTail
 import app.gamenative.utils.DebugRunParams
 import app.gamenative.utils.DebugRunParamsHolder
 import app.gamenative.utils.ExecutableSelectionUtils
+import app.gamenative.utils.FexCodeCaches
 import app.gamenative.utils.FexCodeMaps
 import app.gamenative.utils.LsfgQuickMenuHelper
 import app.gamenative.utils.LsfgVkManager
@@ -3395,7 +3397,7 @@ fun XServerScreen(
 
     if (showPlayingBlockedDialog) {
         val remoteName = playingBlockedRemoteName ?: stringResource(R.string.main_app_running_unknown_game)
-        androidx.compose.material3.AlertDialog(
+        ThemedAlertDialog(
             onDismissRequest = {},
             title = { Text(text = stringResource(R.string.main_app_running_title)) },
             text = { Text(text = stringResource(R.string.main_app_running_message, remoteName)) },
@@ -4607,6 +4609,10 @@ private fun setupXEnvironment(
             guestProgramLauncherComponent.setFEXCorePreset(container.fexCorePreset)
         }
         guestProgramLauncherComponent.setPreUnpack {
+            // First: the launcher has just stopped every Wine process, and the steps below may start Wine again.
+            if (guestProgramLauncherComponent is BionicProgramLauncherComponent && !bootToContainer && !testGraphics) {
+                FexCodeCaches.buildBeforeLaunch(context, guestProgramLauncherComponent) { launchCancel.get() }
+            }
             unpackExecutableFile(
                 context = context,
                 needsUnpacking = container.isNeedsUnpacking,
@@ -4744,9 +4750,12 @@ private fun setupXEnvironment(
     }
 
     fun chainPreInstallSteps(remaining: List<PreInstallSteps.PreInstallCommand>) {
-        (guestProgramLauncherComponent as? BionicProgramLauncherComponent)?.setFEXCorePreset(
-            if (remaining.firstOrNull()?.marker.let { it == Marker.GOG_SCRIPT_INSTALLED || it == Marker.GOG_BONUS_INSTALLER_RUN }) FEXCorePreset.STABILITY else container.fexCorePreset,
-        )
+        (guestProgramLauncherComponent as? BionicProgramLauncherComponent)?.apply {
+            setFEXCorePreset(
+                if (remaining.firstOrNull()?.marker.let { it == Marker.GOG_SCRIPT_INSTALLED || it == Marker.GOG_BONUS_INSTALLER_RUN }) FEXCorePreset.STABILITY else container.fexCorePreset,
+            )
+            setGameStart(remaining.isEmpty())
+        }
         if (remaining.isEmpty()) {
             guestProgramLauncherComponent.setGuestExecutable(gameExecutable)
             guestProgramLauncherComponent.setTerminationCallback(gameTerminationCallback)
@@ -5356,7 +5365,7 @@ private fun getWineStartCommand(
             realSteamRockstarDirectory = if (isRockstar) File(appDirPath) else null
             val launchExe = if (isEaLaunch) "" else appLaunchInfo?.executable?.trim('/').orEmpty()
             val exePath = if (isRockstar) RockstarHelperDeployment.executable(File(appDirPath)) else container.executablePath.ifEmpty { launchExe.ifEmpty { SteamService.getInstalledExe(gameId) } }
-            val launchArgs = if (appLaunchInfo != null && exePath.replace('\\', '/').trim('/').equals(launchExe, ignoreCase = true)) appLaunchInfo.arguments.trim() else ""
+            val launchArgs = SteamUtils.launchConfigArguments(appLaunchInfo?.takeUnless { isEaLaunch }, exePath)
             val normalizedExe = exePath.replace('/', '\\').trimStart('\\')
             val gameFolderName = appDirPath.substringAfterLast('/').ifEmpty { gameId.toString() }
             val steamRoot = "C:\\Program Files (x86)\\Steam"
@@ -5548,7 +5557,11 @@ private fun exit(
     // had to kill loses only its unflushed tail. Ship what is on disk once the environment is down.
     (frameRating?.context ?: PluviaApp.xServerView?.context)?.applicationContext?.let { appContext ->
         val sessionLengthSec = frameRating?.sessionLengthSec?.toInt()
+        val sessionLauncher = app.gamenative.utils.FexCodeCaches.endSession(container)
         CoroutineScope(Dispatchers.IO).launch {
+            // Keeps this session's maps for the on-device compile before the upload deletes them; the compile runs on its own.
+            runCatching { app.gamenative.utils.FexCodeCaches.afterSession(appContext, container, sessionLauncher) }
+                .onFailure { Timber.w(it, "Code cache compile could not start") }
             runCatching { FexCodeMaps.uploadAfterSession(appContext, container, appId, sessionLengthSec) }
                 .onFailure { Timber.w(it, "Code map upload failed") }
         }

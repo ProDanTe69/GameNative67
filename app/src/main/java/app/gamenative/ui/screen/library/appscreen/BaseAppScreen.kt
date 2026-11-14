@@ -6,7 +6,6 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,6 +60,8 @@ import app.gamenative.ui.data.Achievement
 import app.gamenative.ui.data.GameDisplayInfo
 import app.gamenative.ui.enums.AppOptionMenuType
 import app.gamenative.ui.screen.library.components.toggleFavorite
+import app.gamenative.ui.theme.PluviaTheme
+import app.gamenative.ui.theme.ThemedAlertDialog
 import app.gamenative.ui.util.ContainerConfigTransfer
 import app.gamenative.ui.util.SnackbarManager
 import app.gamenative.utils.BestConfigService
@@ -68,6 +69,7 @@ import app.gamenative.utils.CloudSaveBackupManager
 import app.gamenative.utils.ContainerUtils
 import app.gamenative.utils.DeviceGameStatsCache
 import app.gamenative.utils.SessionReport
+import app.gamenative.utils.SteamUtils
 import app.gamenative.utils.DiagnosticsLog
 import app.gamenative.utils.GameCompatibilityCache
 import app.gamenative.utils.GameCompatibilityService
@@ -1002,7 +1004,10 @@ abstract class BaseAppScreen {
      */
     protected fun resetContainerToDefaults(context: Context, libraryItem: LibraryItem) {
         val container = ContainerUtils.getOrCreateContainer(context, libraryItem.appId)
-        val defaults = ContainerUtils.getDefaultContainerData().copy(drives = container.drives)
+        var defaults = ContainerUtils.getDefaultContainerData().copy(drives = container.drives)
+        if (defaults.execArgs.isBlank()) {
+            defaults = defaults.copy(execArgs = SteamUtils.defaultLaunchArguments(libraryItem.appId, defaults.executablePath))
+        }
 
         ContainerUtils.applyToContainer(context, libraryItem.appId, defaults)
 
@@ -1243,7 +1248,7 @@ abstract class BaseAppScreen {
     @Composable
     protected fun ResetConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         val context = LocalContext.current
-        AlertDialog(
+        ThemedAlertDialog(
             onDismissRequest = onDismiss,
             title = { Text(context.getString(R.string.base_app_reset_container_title)) },
             text = {
@@ -1262,6 +1267,9 @@ abstract class BaseAppScreen {
                     Text(context.getString(R.string.cancel))
                 }
             },
+            containerColor = PluviaTheme.dialogContainerColor,
+            titleContentColor = PluviaTheme.dialogTitleColor,
+            textContentColor = PluviaTheme.dialogTextColor,
         )
     }
 
@@ -2167,7 +2175,7 @@ abstract class BaseAppScreen {
         // missing components dialog — shown when config can't be applied
         val missingState = getMissingComponentsState(appId)
         if (missingState != null) {
-            AlertDialog(
+            ThemedAlertDialog(
                 onDismissRequest = {
                     hideMissingComponentsDialog(appId)
                 },
@@ -2199,6 +2207,9 @@ abstract class BaseAppScreen {
                 } else {
                     null
                 },
+                containerColor = PluviaTheme.dialogContainerColor,
+                titleContentColor = PluviaTheme.dialogTitleColor,
+                textContentColor = PluviaTheme.dialogTextColor,
             )
         }
 
