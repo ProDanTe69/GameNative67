@@ -16,6 +16,7 @@ import app.gamenative.enums.Marker
 import app.gamenative.enums.SpecialGameSaveMapping
 import app.gamenative.enums.SteamRealm
 import app.gamenative.events.SteamEvent
+import app.gamenative.data.GameSource
 import app.gamenative.service.SteamService
 import app.gamenative.service.SteamService.Companion.getAppDirName
 import app.gamenative.service.SteamService.Companion.getAppInfoOf
@@ -546,6 +547,24 @@ object SteamUtils {
             exeCommandLine = sanitizedExeCommandLine,
         )
     }
+
+    /** Like Steam: a launch config's arguments only go to that config's own executable. */
+    internal fun launchConfigArguments(launchInfo: LaunchInfo?, exePath: String): String {
+        val info = launchInfo ?: return ""
+        val launchExe = normalizeLaunchExe(info.executable)
+        if (launchExe.isEmpty() || !normalizeLaunchExe(exePath).equals(launchExe, ignoreCase = true)) return ""
+        return info.arguments.trim()
+    }
+
+    /** The launch arguments a new or reset Steam container starts with: the launch config's, when the exe is its own. */
+    fun defaultLaunchArguments(containerId: String, executablePath: String): String {
+        if (ContainerUtils.extractGameSourceFromContainerId(containerId) != GameSource.STEAM) return ""
+        val gameId = ContainerUtils.extractGameIdFromContainerId(containerId)
+        val launchInfo = SteamService.getWindowsLaunchInfos(gameId).firstOrNull() ?: return ""
+        return if (executablePath.isEmpty()) launchInfo.arguments.trim() else launchConfigArguments(launchInfo, executablePath)
+    }
+
+    private fun normalizeLaunchExe(path: String): String = path.replace('\\', '/').trim().trim('/')
 
     private fun sanitizeColdClientArgumentText(value: String): String =
         value.filter { char ->
