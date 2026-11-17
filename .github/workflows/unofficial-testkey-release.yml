@@ -47,7 +47,23 @@ jobs:
           yes | "$SDKMANAGER" --install "build-tools;34.0.0"
 
       - name: Build Legacy release APK (debug-signed, no secrets)
-        run: ./gradlew :app:assembleLegacyRelease -x lintVitalLegacyRelease -x lintVitalAnalyzeLegacyRelease
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          VER="${TAG#v}"
+          VER="${VER%-unofficial-testkey}"
+          EXTRA=""
+          if [[ "$VER" =~ ^([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="${BASH_REMATCH[4]:-0}"
+            CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+            EXTRA="-PAPP_VERSION_NAME=$VER -PAPP_VERSION_CODE=$CODE"
+            echo "Version: $VER, code: $CODE"
+          else
+            echo "Tag is not a version number, using defaults"
+          fi
+          ./gradlew :app:assembleLegacyRelease $EXTRA -x lintVitalLegacyRelease -x lintVitalAnalyzeLegacyRelease
 
       - name: Re-sign with AOSP testkey (v1+v2+v3)
         run: |
