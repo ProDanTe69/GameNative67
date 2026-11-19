@@ -1138,7 +1138,11 @@
     <string name="main_thank_you_message_play">立即成为会员。会员可享受：\n\n• 优化：按你的设备和游戏习惯调校，游戏运行更好\n• AI 帮你解决游戏运行问题\n• 预发布版本抢先体验\n• Discord 高级身份组和专属频道\n• …以及更多\n\n每月 %1$s 起</string>
     <string name="support_plan_pro_title_priced">%1$s/月 · Pro</string>
     <string name="support_plan_basic_title_priced">%1$s/月 · Basic</string>
-    <string name="membership_plans_pitch">会员可使用优化功能，它会学习你的游戏习惯，让你的游戏运行得更好；还可获得 AI 帮助解决游戏运行问题和预发布版本抢先体验。</string>
+    <string name="membership_plans_pitch">会员可使用优化功能，它会学习你的游戏习惯，让你的游戏运行得更好；还可获得 AI 定制修复、游戏运行帮助和预发布版本抢先体验。</string>
+    <plurals name="membership_plan_basic_optimize">
+        <item quantity="other">每月优化 %1$d 款游戏。</item>
+    </plurals>
+    <string name="membership_plan_pro_optimize">无限制优化游戏。</string>
     <string name="membership_plans_title">成为会员</string>
     <string name="support_already_member">已经是会员？登录</string>
     <string name="support_checkout_expired">此次付款已超时。如果你已付款，请用付款时使用的邮箱登录，方案就会显示。</string>
@@ -1218,7 +1222,7 @@
     <!-- 设置：信息组 -->
     <string name="settings_info_title">信息</string>
     <string name="settings_info_send_tip_title">成为会员</string>
-    <string name="settings_info_send_tip_subtitle">AI 游戏运行帮助、版本抢先体验等</string>
+    <string name="settings_info_send_tip_subtitle">优化、AI 游戏运行帮助、版本抢先体验等</string>
     <string name="settings_info_ask_tip_title">会员优惠</string>
     <string name="settings_info_ask_tip_subtitle">偶尔显示成为 GameNative 会员的优惠信息</string>
     <string name="settings_info_source_title">源代码</string>
@@ -2167,6 +2171,11 @@
 
     <!-- 应用选项菜单 -->
     <string name="option_open_store_page">打开商店页面</string>
+    <string name="store_page_open_failed_title">无法打开商店页面</string>
+    <string name="store_page_open_failed_message">GameNative 无法打开此游戏的商店页面。</string>
+    <string name="store_page_link_clipboard_label">商店页面链接</string>
+    <string name="store_page_link_copied">已复制商店页面链接</string>
+    <string name="copy_link">复制链接</string>
     <string name="option_force_cloud_sync">强制云同步</string>
     <string name="option_browse_online_saves">浏览在线存档</string>
     <string name="option_force_download_remote">强制下载远程存档</string>
@@ -3182,6 +3191,28 @@
     <string name="settings_info_boot_ads_subtitle">保持开启有助于支持 GameNative 的开发。它绝不会拖慢游戏启动，也不会以任何方式影响你。</string>
     <string name="settings_info_boot_recs_title">在加载画面显示游戏推荐</string>
     <string name="settings_info_boot_recs_subtitle">没有赞助商卡片时，在游戏启动期间显示你可能喜欢的游戏。</string>
+    <string name="settings_interface_verbose_boot_title">详细启动进度</string>
+    <string name="settings_interface_verbose_boot_subtitle">在容器启动时显示当前步骤和真实进度条</string>
+    <string name="boot_progress_preparing">正在准备容器</string>
+    <string name="boot_progress_wine_files">正在设置 Wine 文件</string>
+    <string name="boot_progress_graphics">正在设置图形驱动</string>
+    <string name="boot_progress_environment">正在启动 Wine 环境</string>
+    <string name="boot_progress_mono">正在安装 Mono</string>
+    <string name="boot_progress_drm">正在处理 DRM</string>
+    <string name="boot_progress_prereqs">正在安装必备组件</string>
+    <string name="boot_progress_launch">正在启动游戏</string>
+    <string name="boot_progress_downloading">正在下载 %1$s %2$d%%</string>
+    <string name="boot_progress_unpacking">正在解压 %1$s</string>
+    <string name="boot_progress_extracting_xaudio">正在提取 XAudio DLL</string>
+    <string name="boot_progress_steam_signing_in">Steam：正在登录</string>
+    <string name="boot_progress_steam_downloading">Steam：正在下载 %1$.1f / %2$.1f MB</string>
+    <string name="boot_progress_steam_waiting">Steam：正在等待 DRM 服务</string>
+    <string name="boot_progress_steam_file">第 %1$d 个文件，共 %2$d 个</string>
+    <string name="boot_progress_reading_interfaces">正在读取接口</string>
+    <string name="boot_progress_graphics_driver">图形驱动 %1$s</string>
+    <string name="boot_progress_dxwrapper">dxwrapper %1$s</string>
+    <string name="boot_progress_component">组件 %1$s</string>
+    <string name="boot_progress_core_driver">核心驱动 %1$s</string>
     <string name="boot_rec_badge">为你推荐</string>
     <string name="boot_ad_close_cd">关闭此卡片</string>
     <string name="boot_ad_sheet_title_sponsored">关于赞助卡片</string>
@@ -3399,4 +3430,58 @@
     <string name="support_files_listing_sending">正在发送 %1$s 的列表</string>
     <string name="support_files_listing_sent">列表已发送（%1$d 项）</string>
     <string name="support_files_listing_failed">无法发送 %1$s 的列表。%2$s</string>
+
+    <!-- HTML5 runtime strings -->
+    <string name="steam_imagefs_open_container_title">为此容器设置 Wine</string>
+    <string name="steam_imagefs_open_container_message_imagefs_only">要在 Wine 中打开此容器，需要下载并安装 Wine Ubuntu 镜像（约 600 MB，一次性，所有游戏共享）。是否继续？</string>
+    <string name="steam_imagefs_open_container_message_prefix_only">首次在 Wine 中打开此容器时，需要将 Windows 前缀解压到容器中（每个容器额外约 1.5 GB 存储空间，一次性）。是否继续？</string>
+    <string name="steam_imagefs_open_container_message_full">首次在 Wine 中打开此容器时，将运行两个一次性设置步骤：Wine Ubuntu 镜像（约 600 MB，所有游戏共享）和此容器的 Windows 前缀（约 1.5 GB）。是否继续？</string>
+    <string name="webview_unsupported_chromium">HTML5 运行时不可用 — WebView %1$s 版本过旧（需要 Chromium %2$d 或更高版本）</string>
+    <string name="webview_runtime_unavailable">此设备上 HTML5 运行时不可用</string>
+    <string name="webview_container_not_found">HTML5 游戏容器缺失或损坏</string>
+    <string name="webview_download_saved">已保存到 Downloads/%1$s</string>
+    <string name="webview_download_unsupported_scheme">已跳过下载（不支持的协议）</string>
+    <string name="webview_download_failed">下载失败：%1$s</string>
+    <string name="quickmenu_edit_overlay">编辑叠加层</string>
+    <string name="render_scale_label">渲染缩放（仅限 HTML5 后端）</string>
+    <string name="render_scale_description">较低的值渲染更少像素以获得更好的性能和续航；较高的值看起来更清晰。下次启动时生效。对 Wine 容器无影响。</string>
+    <string name="render_scale_device">设备默认</string>
+    <string name="render_scale_0_5x">0.5×（最低，最佳性能）</string>
+    <string name="render_scale_0_75x">0.75×</string>
+    <string name="render_scale_1x">1×</string>
+    <string name="render_scale_1_5x">1.5×</string>
+    <string name="render_scale_2x">2×</string>
+    <string name="render_scale_3x">3×</string>
+    <string name="render_scale_4x">4×（最高，最差性能）</string>
+    <string name="html5_controller_tab_overlay_opacity_value">叠加层不透明度：%1$d%%</string>
+    <string name="html5_controller_tab_overlay_visible">显示屏幕叠加层</string>
+    <string name="html5_overlay_select_element_first">请先点击一个叠加层元素，然后再编辑</string>
+    <string name="gesture_cursor_mode">相对光标</string>
+    <string name="gesture_cursor_mode_relative_subtitle">移动追踪光标，而非在手指位置派发事件</string>
+    <string name="gesture_action_open_quick_menu">打开快捷菜单</string>
+    <string name="container_storage_reclaim_button">回收 Wine 存储空间</string>
+    <string name="container_storage_reclaim_title">回收 Wine 存储空间？</string>
+    <string name="container_storage_reclaim_message">删除 %1$s 的 Wine 发行目录（windows、Program Files、Program Files (x86)）。存档和注册表设置将被保留。Wine 前缀会在下次以 Wine 后端启动时自行重建（约 30 秒）。</string>
+    <string name="container_storage_reclaim_success">已从 %1$s 回收 %2$s</string>
+    <string name="container_storage_reclaim_noop">%1$s 没有可回收的内容</string>
+    <string name="container_storage_reclaim_failed">回收存储空间失败：%1$s</string>
+    <string name="html5_optin_no_engine">在 %1$s 未找到受支持的 HTML5 引擎。预期为 RMMV、RMMZ、Construct 3 或 package.nw 压缩包。</string>
+    <string name="html5_optin_install_path_unresolvable">HTML5 启用无法解析安装路径。</string>
+    <string name="html5_engine_changed">%1$s 引擎已更新：%2$s → %3$s。容器配置已刷新。</string>
+    <string name="html5_switch_hint">使用 HTML5 以获得更好的性能（测试版）</string>
+    <string name="html5_runtime_graphics_alloc_failure">无法在 HTML5 模式下为此游戏分配图形资源。请尝试在容器设置中切换到 Wine。</string>
+    <string name="library_runtime_label">运行时</string>
+    <string name="library_runtime_value_webview">WebView</string>
+    <string name="save_sync_lock">存档同步繁忙 — 请稍后重试。</string>
+    <string name="save_sync_corruption">存档文件似乎已损坏 — 同步已暂停。</string>
+    <string name="save_sync_missing">未找到存档路径 — 同步已暂停。</string>
+    <string name="save_sync_permission">存储权限被拒绝 — 同步已暂停。</string>
+    <string name="save_sync_other">存档同步失败。你的存档可能无法上传到 Steam Cloud。</string>
+    <string name="save_sync_incompatible">此设备不支持该云存档格式 — 同步已暂停。Android 存档保留在本地。</string>
+    <string name="save_sync_unsupported_game">此游戏不支持 Steam Cloud</string>
+    <string name="html5_opfs_unsupported_falling_back_to_wine">此游戏的 HTML5 存档需要 Chromium 109+ — 改为通过 Wine 启动</string>
+    <string name="html5_angle_override_suggested">此游戏需要 Android 的 ANGLE 覆盖才能渲染。通过 adb：settings put global angle_gl_driver_all_angle 1，然后重启 GameNative</string>
+    <string name="html5_diagnostic_log_full">诊断日志已轮转 — 较旧的跟踪记录已归档。</string>
+    <string name="html5_diagnostic_write_error">诊断日志写入失败。</string>
+    <string name="html5_electron_missing_product_name">HTML5 配置：Electron 游戏的 package.json 中缺少 productName/name</string>
 </resources>

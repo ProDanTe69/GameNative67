@@ -2,7 +2,7 @@ package app.gamenative.ui.screen.library.appscreen
 
 import android.content.Context
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import app.gamenative.ui.component.RingTextButton
 import app.gamenative.ui.component.dialog.LoadingDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,6 +29,7 @@ import app.gamenative.ui.theme.ThemedAlertDialog
 import app.gamenative.utils.StorageUtils
 import app.gamenative.utils.CloudSaveBackupManager
 import app.gamenative.utils.MarkerUtils
+import app.gamenative.store.StorePageResolver
 import java.io.File
 import app.gamenative.ui.data.AppMenuOption
 import app.gamenative.ui.data.GameDisplayInfo
@@ -225,6 +226,8 @@ class GOGAppScreen : BaseAppScreen() {
                 description = sanitizeGogDescription(game?.description.orEmpty()),
                 tags = game?.genres.orEmpty(),
             ),
+            storePageTarget = game?.slug?.let(StorePageResolver::gog),
+            runtime = app.gamenative.html5.host.Html5Routing.rememberRuntime(context, libraryItem.appId, libraryItem.gameId),
         )
         return displayInfo
     }
@@ -670,6 +673,7 @@ class GOGAppScreen : BaseAppScreen() {
         onDismiss: () -> Unit,
         onEditContainer: () -> Unit,
         onBack: () -> Unit,
+        onClickPlay: (Boolean) -> Unit,
     ) {
         Timber.tag(TAG).d("AdditionalDialogs: composing for appId=${libraryItem.appId}")
         val context = LocalContext.current
@@ -770,6 +774,7 @@ class GOGAppScreen : BaseAppScreen() {
                 dismissBtnText = installDialogState.dismissBtnText,
                 title = installDialogState.title,
                 message = installDialogState.message,
+                defaultFocus = installDialogState.type.defaultFocus,
             )
         }
 
@@ -816,7 +821,7 @@ class GOGAppScreen : BaseAppScreen() {
                     )
                 },
                 confirmButton = {
-                    TextButton(
+                    RingTextButton(
                         onClick = {
                             hideUninstallDialog(libraryItem.appId)
                             performUninstall(context, libraryItem)
@@ -826,7 +831,7 @@ class GOGAppScreen : BaseAppScreen() {
                     }
                 },
                 dismissButton = {
-                    TextButton(
+                    RingTextButton(
                         onClick = {
                             hideUninstallDialog(libraryItem.appId)
                         },
