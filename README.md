@@ -1,6 +1,8 @@
 <div align="center">
 
 # GameNative
+[![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/n8S4G2WZQ4)
+
 
 **Play the PC games you already own — from Steam, Epic and GOG — on your Android device, with cloud saves.**
 
@@ -127,6 +129,10 @@ GameNative is sponsored by [CodeRabbit](https://coderabbit.link/gnative).
 
 [![Star History Chart](https://star-history.dera.page/svg?repos=utkarshdalal/GameNative&type=Date&theme=dark)](https://star-history.dera.page/#utkarshdalal/GameNative&Date)
 
+## Community
+
+Join our Discord: https://discord.gg/n8S4G2WZQ4
+
 ## License
 
 [GPL 3.0](https://github.com/utkarshdalal/GameNative/blob/master/LICENSE).
@@ -135,4 +141,4 @@ See [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) for attributions, copyleft source
 
 ---
 
-**Disclaimer:** This software is meant for playing games that you legally own. Don't use it for piracy or anything else illegal. The maintainer takes no responsibility for misuse.
+**Disclaimer:** This software is meant for playing games that you legally own. Don't use it for piracy or anything else illegal. The maintainer of this fork takes no responsibility for misuse.
