@@ -26,6 +26,22 @@ jobs:
           submodules: false
       - name: Check out leveldb + snappy submodules
         run: git submodule update --init --recursive iq80-leveldb/upstream snappy-java/upstream
+        
+      - name: Check my protected mod lines
+        run: |
+          fail=0
+          check() {
+            n=$(grep -cF "$2" "$3" || true)
+            if [ "$n" -lt "$4" ]; then echo "MISSING: $1 (found $n, need at least $4)"; fail=1; else echo "OK: $1 ($n)"; fi
+          }
+          check "Lossless picker UI" "Lossless" app/src/main/java/app/gamenative/ui/component/dialog/GraphicsTab.kt 5
+          check "Lossless picker logic" "Lossless" app/src/main/java/app/gamenative/utils/LsfgVkManager.kt 37
+          check "Update popup disabled" "if (false &&" app/src/main/java/app/gamenative/ui/PluviaMain.kt 1
+          check "Version code line" "APP_VERSION_CODE" app/build.gradle.kts 1
+          check "Version name line" "APP_VERSION_NAME" app/build.gradle.kts 1
+          n=$(grep "DEFAULT_WINCOMPONENTS =" app/src/main/java/com/winlator/container/Container.java | grep -c "opengl=1" || true)
+          if [ "$n" -lt 1 ]; then echo "MISSING: opengl=1 in DEFAULT_WINCOMPONENTS"; fail=1; else echo "OK: opengl=1"; fi
+          exit $fail
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
