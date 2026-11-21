@@ -897,7 +897,7 @@ object ContainerUtils {
         Timber.d("Set container.execArgs to '${containerData.execArgs}'")
     }
 
-    private fun mapLanguageToLocale(language: String): String {
+    fun mapLanguageToLocale(language: String): String {
         return when (language.lowercase()) {
             "arabic" -> "ar_SA.utf8"
             "bulgarian" -> "bg_BG.utf8"
