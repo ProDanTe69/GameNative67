@@ -11,8 +11,10 @@ import androidx.compose.runtime.getValue
 import app.gamenative.FeatureGate
 import app.gamenative.PluviaApp
 import app.gamenative.events.AndroidEvent
+import app.gamenative.html5.diag.Html5DebugRun
 import app.gamenative.html5.input.Html5InputController
 import app.gamenative.html5.input.Html5InputSynthesizer
+import app.gamenative.html5.packed.PackedArchive
 import app.gamenative.html5.savesync.LocalStorageSnapshot
 import app.gamenative.html5.shim.SteamworksJsBridge
 import app.gamenative.runtime.WebViewContainer
@@ -43,7 +45,7 @@ internal fun Html5TeardownEffect(
     html5InputSynthesizer: Html5InputSynthesizer,
     steamworksBridge: SteamworksJsBridge,
     c3Setup: C3WorkerShimSetup?,
-    zipFile: ZipFile?,
+    packedArchive: PackedArchive?,
     tpatchOverlays: List<ZipFile>,
     electronSetup: ElectronAsarSetup?,
     isQuickMenuOpen: () -> Boolean,
@@ -110,7 +112,7 @@ internal fun Html5TeardownEffect(
             val capturedSteamworksBridge = steamworksBridge
             val capturedHtml5InputController = html5InputController
             val capturedHtml5InputSynthesizer = html5InputSynthesizer
-            val capturedZipFile = zipFile
+            val capturedPackedArchive = packedArchive
             val capturedTpatchOverlays = tpatchOverlays
             val capturedElectronSetup = electronSetup
             val capturedAppId = appId
@@ -169,6 +171,16 @@ internal fun Html5TeardownEffect(
                             }
                         }.onFailure { Timber.tag("Html5GreenworksCloud").w(it, "snapshot capture failed") }
                     }
+                    // a debug run shorter than one sample window would otherwise report no frame data.
+                    if (Html5DebugRun.isActive) {
+                        val flushed = CompletableDeferred<String?>()
+                        withContext(Dispatchers.Main) {
+                            runCatching {
+                                capturedWebView.evaluateJavascript(Html5DebugRun.FLUSH_JS) { flushed.complete(it) }
+                            }.onFailure { flushed.complete(null) }
+                        }
+                        Html5DebugRun.onFinalSample(withTimeoutOrNull(2_000L) { flushed.await() })
+                    }
                     // chromium commits the page's last LS writes to leveldb only after destroy, so the outbound
                     // would read stale keys. the capture fires beforeunload itself so unload-time saves land
                     // first. null -> outbound reads leveldb.
@@ -195,13 +207,15 @@ internal fun Html5TeardownEffect(
                         runCatching { capturedWebView.destroy() }
                     }
                     // AFTER destroy so in-flight zip reads finish.
-                    runCatching { capturedZipFile?.close() }
+                    runCatching { capturedPackedArchive?.close() }
                     capturedTpatchOverlays.forEach { overlay -> runCatching { overlay.close() } }
                     capturedElectronSetup?.close()
                     // AFTER destroy (leveldb lock released) and BEFORE onExit: emit runs syncOutbound
                     // synchronously, so the wine save dir is rewritten before autocloud scans it.
                     // the reverse order causes spurious conflict dialogs.
                     PluviaApp.events.emit(AndroidEvent.WebViewDestroyed)
+                    // BEFORE onExit, which builds a debug run's report from the log this closes.
+                    Html5DebugRun.finish()
                     runCatching { capturedOnExit(null) }
                     runCatching { capturedViewModel.html5SaveSyncService.clearActive() }
                     if (FeatureGate.ENABLE_HTML5_DIAGNOSTIC_SHIM) {
