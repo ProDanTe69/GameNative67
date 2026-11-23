@@ -64,7 +64,7 @@ object ContainerUtils {
         // Override default driver and DXVK version based on Turnip capability
         if (GPUInformation.isTurnipCapable(context)) {
             DefaultVersion.VARIANT = Container.BIONIC
-            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-12"
+            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-13"
             DefaultVersion.DEFAULT_GRAPHICS_DRIVER = "Wrapper"
             DefaultVersion.DXVK = if (GPUInformation.isAdreno6xx(context)) "1.11.1-sarek" else "2.4.1-gplasync"
             DefaultVersion.VKD3D = "2.14.1"
@@ -76,7 +76,7 @@ object ContainerUtils {
             DefaultVersion.ASYNC_CACHE = "1"
         } else if (GPUInformation.isAdrenoA12(context)) {
             DefaultVersion.VARIANT = Container.BIONIC
-            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-12"
+            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-13"
             DefaultVersion.DEFAULT_GRAPHICS_DRIVER = "Wrapper"
             DefaultVersion.DXVK = "2.4.1-gplasync"
             DefaultVersion.VKD3D = "2.14.1"
@@ -85,7 +85,7 @@ object ContainerUtils {
             DefaultVersion.ASYNC_CACHE = "1"
         } else if (GPUInformation.isAdreno8EliteGen5(context)) {
             DefaultVersion.VARIANT = Container.BIONIC
-            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-12"
+            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-13"
             DefaultVersion.DEFAULT_GRAPHICS_DRIVER = "Wrapper"
             DefaultVersion.DXVK = "2.4.1-gplasync"
             DefaultVersion.VKD3D = "2.14.1"
@@ -94,7 +94,7 @@ object ContainerUtils {
             DefaultVersion.ASYNC_CACHE = "1"
         } else if (GPUInformation.isAdreno8Elite(context)) {
             DefaultVersion.VARIANT = Container.BIONIC
-            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-12"
+            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-13"
             DefaultVersion.DEFAULT_GRAPHICS_DRIVER = "Wrapper"
             DefaultVersion.DXVK = "2.4.1-gplasync"
             DefaultVersion.VKD3D = "2.14.1"
@@ -103,7 +103,7 @@ object ContainerUtils {
             DefaultVersion.ASYNC_CACHE = "1"
         } else {
             DefaultVersion.VARIANT = Container.BIONIC
-            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-12"
+            DefaultVersion.WINE_VERSION = "proton-11.0-2-arm64ec-13"
             DefaultVersion.DEFAULT_GRAPHICS_DRIVER =
                 if (GPUInformation.isAdrenoGPU(context)) "Wrapper" else "Wrapper-gamenative"
             DefaultVersion.DXVK = "async-1.10.3"
@@ -192,6 +192,7 @@ object ContainerUtils {
             useDRI3 = PrefManager.useDRI3,
             hdrEnabled = PrefManager.hdrEnabled,
             gamescopeOutputResolution = PrefManager.gamescopeOutputResolution,
+            gamescopeGuestGl = PrefManager.gamescopeGuestGl,
             useSteamInput = PrefManager.useSteamInput,
             enableXInput = PrefManager.xinputEnabled,
 			enableDInput = PrefManager.dinputEnabled,
@@ -252,6 +253,7 @@ object ContainerUtils {
         PrefManager.useDRI3 = containerData.useDRI3
         PrefManager.hdrEnabled = containerData.hdrEnabled
         PrefManager.gamescopeOutputResolution = containerData.gamescopeOutputResolution
+        PrefManager.gamescopeGuestGl = containerData.gamescopeGuestGl
         PrefManager.disableMouseInput = containerData.disableMouseInput
         PrefManager.externalDisplayInputMode = containerData.externalDisplayMode
         PrefManager.externalDisplaySwap = containerData.externalDisplaySwap
@@ -417,6 +419,10 @@ object ContainerUtils {
             gamescopeOutputResolution = container.getExtra(
                 GamescopeSettings.EXTRA_OUTPUT_RESOLUTION,
                 GamescopeSettings.OUTPUT_RESOLUTION_DEFAULT,
+            ),
+            gamescopeGuestGl = container.getExtra(
+                GamescopeSettings.EXTRA_GUEST_GL,
+                GamescopeSettings.GUEST_GL_DEFAULT,
             ),
             videoMemorySize = videoMemorySize,
             mouseWarpOverride = mouseWarpOverride,
@@ -839,6 +845,7 @@ object ContainerUtils {
         }
         container.putExtra("sharpnessEffect", containerData.sharpnessEffect)
         container.putExtra(GamescopeSettings.EXTRA_OUTPUT_RESOLUTION, containerData.gamescopeOutputResolution)
+        container.putExtra(GamescopeSettings.EXTRA_GUEST_GL, containerData.gamescopeGuestGl)
         container.putExtra("sharpnessLevel", containerData.sharpnessLevel.toString())
         container.putExtra("sharpnessDenoise", containerData.sharpnessDenoise.toString())
         container.putExtra("vibrationIntensity", containerData.vibrationIntensity.coerceIn(0, 100).toString())
@@ -1256,6 +1263,7 @@ object ContainerUtils {
                 useDRI3 = PrefManager.useDRI3,
                 hdrEnabled = PrefManager.hdrEnabled,
                 gamescopeOutputResolution = PrefManager.gamescopeOutputResolution,
+                gamescopeGuestGl = PrefManager.gamescopeGuestGl,
                 videoMemorySize = PrefManager.videoMemorySize,
                 mouseWarpOverride = PrefManager.mouseWarpOverride,
                 enableXInput = PrefManager.xinputEnabled,

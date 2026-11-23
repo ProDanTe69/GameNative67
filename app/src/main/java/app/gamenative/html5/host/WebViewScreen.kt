@@ -59,6 +59,7 @@ import app.gamenative.html5.input.Html5InputController
 import app.gamenative.html5.input.Html5InputSynthesizer
 import app.gamenative.html5.input.Html5OverlaySeed
 import app.gamenative.html5.input.resolveInputMode
+import app.gamenative.html5.packed.PackedArchive
 import app.gamenative.html5.savesync.SaveDirectoryResolver
 import app.gamenative.html5.shim.Html5AchievementSeed
 import app.gamenative.html5.shim.Html5FsBridge
@@ -87,7 +88,10 @@ import org.apache.commons.compress.archivers.zip.ZipFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import app.gamenative.html5.diag.Html5DebugRun
+import app.gamenative.html5.diag.Html5ProbeWebView
 import app.gamenative.html5.profile.EnginePackId
+import app.gamenative.utils.DebugReportUtils
 import app.gamenative.data.GameSource
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -98,9 +102,14 @@ fun WebViewScreen(
     // in-session exits only -- see dispatchWebViewSessionExit for why it differs from navigateBack.
     exitSession: () -> Unit,
     onExit: (onComplete: (() -> Unit)?) -> Unit,
+    debugRun: Boolean = false,
+    // a launch that stops before the session starts never reaches onExit, which is what ends a debug run.
+    onDebugRunAborted: () -> Unit = {},
     viewModel: WebViewScreenViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    // the flag is cleared at exit, while this screen is still composed.
+    val isDebugRun = remember(appId) { debugRun }
 
     // pre-launch normally ran this already; a launch that skipped it still gets the gate here.
     val runtimeReady by produceState<Boolean?>(null) { value = Html5Runtime.ensureInitialized(context) }
@@ -108,7 +117,10 @@ fun WebViewScreen(
         null -> return
         false -> {
             // ensureInitialized already showed why.
-            LaunchedEffect(Unit) { navigateBack() }
+            LaunchedEffect(Unit) {
+                onDebugRunAborted()
+                navigateBack()
+            }
             return
         }
         true -> Unit
@@ -118,6 +130,7 @@ fun WebViewScreen(
     if (loaded == null) {
         LaunchedEffect(appId) {
             SnackbarManager.show(context.getString(R.string.webview_container_not_found))
+            onDebugRunAborted()
             navigateBack()
         }
         return
@@ -139,11 +152,12 @@ fun WebViewScreen(
         resolveInputMode(container, profile)
     }
 
-    val shimUrls: List<String> = remember(profile, resolvedMode) {
+    val shimUrls: List<String> = remember(profile, resolvedMode, isDebugRun) {
         resolveShimUrls(
             profile,
             resolvedMode,
             includeDiagnostic = FeatureGate.ENABLE_HTML5_DIAGNOSTIC_SHIM,
+            debugRun = isDebugRun,
         )
     }
 
@@ -181,6 +195,13 @@ fun WebViewScreen(
     var saveSyncInboundComplete by remember(container.id) { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        // first, so a launch that bails below still leaves a log to report.
+        if (isDebugRun) {
+            withContext(Dispatchers.IO) {
+                DebugReportUtils.startLogcatCapture(context, appId)
+                Html5DebugRun.start(context, appId, container, profile?.engine)
+            }
+        }
         // no OPFS-SAH: persist runtime=wine so the next launch goes through Wine. runs BEFORE markActive so
         // no html5 state is touched when bailing.
         if (c3Setup != null && !C3WorkerShimSetup.isSupported(context)) {
@@ -262,7 +283,7 @@ fun WebViewScreen(
     val nwArgvJson = packSetup.nwArgvJson
     val nwAppDataPath = packSetup.nwAppDataPath
     val mainModuleFilename = packSetup.mainModuleFilename
-    val zipFile: ZipFile? = packSetup.zipFile
+    val packedArchive: PackedArchive? = packSetup.packedArchive
     val tpatchOverlays: List<ZipFile> = packSetup.tpatchOverlays
     val electronSetup: ElectronAsarSetup? = packSetup.electronSetup
     val electronCtx: Map<String, String>? = packSetup.electronCtx
@@ -277,6 +298,7 @@ fun WebViewScreen(
     if (localServer == null) {
         LaunchedEffect(Unit) {
             SnackbarManager.show(context.getString(R.string.webview_runtime_unavailable))
+            onDebugRunAborted()
             navigateBack()
         }
         return
@@ -324,7 +346,7 @@ fun WebViewScreen(
 
     // precedence: asar -> zip -> disk.
     val interceptor: WebViewClient = remember(
-        assetLoader, installDir, shimUrls, zipFile, electronSetup, profile, locale, electronCtx, gestureConfigJson, nwArgvJson, mainModuleFilename, effectiveRenderScale, container.isTouchscreenMode,
+        assetLoader, installDir, shimUrls, packedArchive, electronSetup, profile, locale, electronCtx, gestureConfigJson, nwArgvJson, mainModuleFilename, effectiveRenderScale, container.isTouchscreenMode,
     ) {
         val injection = IndexInjectionConfig(
             locale = locale,
@@ -338,6 +360,7 @@ fun WebViewScreen(
             fsBridgeOnly = profile?.fsBridgeOnly == true,
             touchscreenMode = container.isTouchscreenMode,
             fillCanvas = profile?.fillCanvas == true,
+            allowBodyScroll = profile?.engine == EnginePackId.ELECTRON,
         )
         val hydrationProvider: () -> Boolean = { viewModel.html5SaveSyncService.getWineHasFreshBytes() }
         // `<...>/drive_c/users/xuser/Saved Games/<game>` -> `C:/users/xuser/Saved Games/<game>`.
@@ -362,9 +385,9 @@ fun WebViewScreen(
                 injection = injection,
                 shouldWaitForMainHydrationProvider = hydrationProvider,
             )
-            zipFile != null -> ZipAssetInterceptor(
+            packedArchive != null -> ZipAssetInterceptor(
                 context,
-                zipFile,
+                packedArchive,
                 shimUrls,
                 patches = profile?.patches ?: emptyList(),
                 decryptContext = decryptContext,
@@ -750,7 +773,7 @@ fun WebViewScreen(
         html5InputSynthesizer = html5InputSynthesizer,
         steamworksBridge = steamworksBridge,
         c3Setup = c3Setup,
-        zipFile = zipFile,
+        packedArchive = packedArchive,
         tpatchOverlays = tpatchOverlays,
         electronSetup = electronSetup,
         isQuickMenuOpen = { showQuickMenu },
@@ -784,6 +807,8 @@ fun WebViewScreen(
 
     rememberHtml5FpsCounter(isPerformanceHudEnabled, context, webView, webViewFps)
 
+    var debugProbeDone by remember(appId) { mutableStateOf(false) }
+
     // xServer = null is safe: overlay presses go through the html5 binding sink, never ICV's xServer branches.
     Box(
         modifier = Modifier
@@ -794,6 +819,14 @@ fun WebViewScreen(
             },
     ) {
         AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
+        if (isDebugRun && saveSyncInboundComplete && !debugProbeDone) {
+            Html5ProbeWebView(
+                onReport = { json ->
+                    Html5DebugRun.onProbe(json)
+                    debugProbeDone = true
+                },
+            )
+        }
         AndroidView(
             factory = { ctx ->
                 InputControlsView(ctx).apply {
