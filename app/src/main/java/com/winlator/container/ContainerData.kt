@@ -127,6 +127,9 @@ data class ContainerData(
     val lsfgEnabled: Boolean = false,
     val windowsVrEnabled: Boolean = false,
     val openCompositeEnabled: Boolean = false,
+    /** URI string of a manually selected Lossless.dll (fallback when Steam auto-discovery fails) */
+    val lsfgCustomDllPath: String = "",
+    /** Whether bionic-fg AI frame generation is enabled for this container */
 ) {
     companion object {
         val Saver = mapSaver(
@@ -214,6 +217,7 @@ data class ContainerData(
                     "lsfgEnabled" to state.lsfgEnabled,
                     "windowsVrEnabled" to state.windowsVrEnabled,
                     "openCompositeEnabled" to state.openCompositeEnabled,
+                    "lsfgCustomDllPath" to state.lsfgCustomDllPath,
                 )
             },
             restore = { savedMap ->
@@ -302,6 +306,7 @@ data class ContainerData(
                     lsfgEnabled = (savedMap["lsfgEnabled"] as? Boolean) ?: false,
                     windowsVrEnabled = (savedMap["windowsVrEnabled"] as? Boolean) ?: false,
                     openCompositeEnabled = (savedMap["openCompositeEnabled"] as? Boolean) ?: false,
+                    lsfgCustomDllPath = (savedMap["lsfgCustomDllPath"] as? String) ?: "",
                 )
             },
         )
