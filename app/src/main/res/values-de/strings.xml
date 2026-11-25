@@ -243,6 +243,7 @@
     <string name="intent_launch_failed">Spiel konnte nicht gestartet werden: ungültige Startverknüpfung</string>
     <string name="intent_launch_steam_pending">Spiel wird gestartet, sobald Steam verbunden ist</string>
     <string name="intent_launch_service_pending">Spiel wird gestartet, sobald der Dienst bereit ist</string>
+    <string name="intent_launch_sign_in_required">Melde dich bei %1$s an, um dieses Spiel zu starten</string>
     <string name="intent_launch_steam_login_failed">Steam-Anmeldung fehlgeschlagen — Spielstart abgebrochen</string>
     <string name="intent_launch_service_timeout">Spieldienst konnte nicht gestartet werden — Spielstart abgebrochen</string>
     <string name="back_press_exit_warning">Erneut zurück drücken zum Beenden</string>
@@ -1065,7 +1066,6 @@
     <string name="support_refresh">Aktualisieren</string>
     <string name="support_signed_out_title">Hilfe für deine Spiele</string>
     <string name="support_signed_out_body">Melde dich bei deinem GameNative-Konto an, um deine Support-Unterhaltungen zu sehen und mit unserer AI über Probleme mit deinen Spielen zu sprechen.</string>
-    <string name="support_signed_out_discord">Du kannst auch in unserem Discord Hilfe bekommen</string>
     <string name="support_empty_title">Noch keine Unterhaltungen</string>
     <string name="support_empty_body">Wähle dazu „AI-Hilfe erhalten“ bei einem Spiel in deiner Bibliothek. Spiele, bis das Problem auftritt, schließe das Spiel und beschreibe dann, was schiefgelaufen ist.</string>
     <string name="support_state_waiting">Wartet auf Antwort</string>
@@ -1160,6 +1160,7 @@
     <string name="support_uploading">Deine Logs werden hochgeladen</string>
     <string name="support_share_file">Datei öffnen</string>
     <string name="debug_report_use_discord">Stattdessen Discord verwenden</string>
+    <string name="debug_report_use_discord_no_account">Ohne Konto fortfahren (über Discord)</string>
     <string name="debug_report_use_app">Stattdessen den Chat in der App verwenden</string>
     <string name="settings_emulation_orientations_title">Erlaubte Ausrichtungen</string>
     <string name="settings_emulation_orientations_subtitle">Wähle, in welche Richtungen während des Spiels gedreht werden kann</string>
@@ -2122,6 +2123,11 @@
         <item quantity="one">%1$d Min.</item>
         <item quantity="other">%1$d Min.</item>
     </plurals>
+    <string name="optimize_after_short">Diese Sitzung war zu kurz zum Messen</string>
+    <plurals name="optimize_play_minutes">
+        <item quantity="one">Spiele mindestens %1$d Minute, sobald das Spiel läuft, damit wir sehen, ob die Änderung hilft.</item>
+        <item quantity="other">Spiele mindestens %1$d Minuten, sobald das Spiel läuft, damit wir sehen, ob die Änderung hilft.</item>
+    </plurals>
     <string name="settings_group_cloud_saves">Cloud-Spielstände</string>
     <string name="settings_save_backups_to_keep">Aufzubewahrende Spielstand-Backups</string>
     <string name="settings_save_backups_off">Aus</string>
@@ -2435,13 +2441,16 @@
     <string name="debug_prerun_message_2_app">Die erste Analyse ist kostenlos. Für weitere Antworten brauchst du einen Plan.</string>
     <string name="debug_prerun_message_1_neutral">Das Spiel läuft mit Debug-Logging. Wenn du es beendest, geht das Log an unsere AI. Spiele, bis das Problem auftritt.</string>
     <string name="debug_trial_note">Kostenlose Testphase verfügbar.</string>
+    <string name="debug_signin_answer_in_app">Deine Antwort kommt hier in der App an</string>
+    <string name="debug_signin_first_free">Deine erste Analyse ist kostenlos</string>
+    <string name="debug_signin_about_a_minute">Das dauert etwa eine Minute</string>
     <string name="debug_prerun_message_3">Jeder kann den Bericht teilen, um menschliche Hilfe zu erhalten.</string>
     <string name="debug_paywall_title">AI-Debug-Support erhalten</string>
     <string name="debug_paywall_pitch">Individuelle AI-Patches und Builds, die deine Spiele reparieren.</string>
     <string name="debug_paywall_tier5_title">$5/Monat · Basic</string>
-    <string name="debug_paywall_tier5_body">1 individueller Fix pro Monat, bis zu 5 Versuche pro Fix.</string>
+    <string name="debug_paywall_tier5_body">KI-Antworten und Folgeantworten. 1 individueller Fix pro Monat (ein Patch oder Build für dein Spiel), bis zu 5 Versuche pro Fix.</string>
     <string name="debug_paywall_tier10_title">$10/Monat · Pro</string>
-    <string name="debug_paywall_tier10_body">3 individuelle Fixes pro Monat, schnellere Antworten, zuerst in der Warteschlange.</string>
+    <string name="debug_paywall_tier10_body">KI-Antworten und Folgeantworten, schneller und zuerst in der Warteschlange. 3 individuelle Fixes pro Monat (ein Patch oder Build für dein Spiel).</string>
     <string name="debug_paywall_cancel_anytime">Jederzeit kündbar. Es gelten Fair-Use-Grenzen.</string>
     <string name="debug_paywall_costs_note">Abos decken die AI-Servicekosten, die diese Funktion möglich machen.</string>
     <string name="debug_paywall_already">Schon Supporter?</string>
