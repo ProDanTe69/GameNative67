@@ -1,5 +1,6 @@
 package app.gamenative.utils
 
+import app.gamenative.service.store.StoreGames
 import android.content.Context
 import android.os.Build
 import app.gamenative.BuildConfig
@@ -1105,6 +1106,16 @@ object ContainerUtils {
                     defaultDrives
                 }
             }
+
+            else -> {
+                val installPath = StoreGames.installPath(extractGameIdFromContainerId(appId))
+                if (installPath != null) {
+                    val drive: Char = if (defaultDrives.contains("A:")) Container.getNextAvailableDriveLetter(defaultDrives) else 'A'
+                    "$defaultDrives$drive:$installPath"
+                } else {
+                    defaultDrives
+                }
+            }
         }
         Timber.d("Prepared container drives: $drives")
 
@@ -1428,6 +1439,8 @@ object ContainerUtils {
                 val appIdInt = runCatching { extractGameIdFromContainerId(appId) }.getOrNull()
                 if (appIdInt != null) AmazonService.getInstallPathByAppId(appIdInt) else null
             }
+
+            else -> StoreGames.installPath(extractGameIdFromContainerId(appId))
         }
 
         val resolvedGameFolderPath = if (gameSource == GameSource.CUSTOM_GAME) {
@@ -1445,6 +1458,8 @@ object ContainerUtils {
                 GameSource.AMAZON ->
                     runCatching { extractGameIdFromContainerId(appId) }.getOrNull()
                         ?.let { AmazonService.updateInstallPath(it, resolvedGameFolderPath) }
+                GameSource.EA, GameSource.UBISOFT ->
+                    runBlocking { StoreGames.updateInstallPath(extractGameIdFromContainerId(appId), resolvedGameFolderPath) }
                 else -> {}
             }
         }
@@ -1575,6 +1590,12 @@ object ContainerUtils {
             deleteHtml5OriginStorage(context, appId)
         }.onFailure {
             Timber.tag("ContainerUtils").w(it, "html5 origin storage cleanup failed appId=%s", appId)
+        }
+        // a page that ran at its own origin kept its storage in a profile of its own.
+        runCatching {
+            app.gamenative.html5.host.Html5PageProfiles.remove(context, appId)
+        }.onFailure {
+            Timber.tag("ContainerUtils").w(it, "html5 page profile cleanup failed appId=%s", appId)
         }
 
         runCatching {
@@ -1766,15 +1787,7 @@ object ContainerUtils {
      * Extracts the game source from a container ID string
      */
     fun extractGameSourceFromContainerId(containerId: String): GameSource {
-        return when {
-            containerId.startsWith("STEAM_") -> GameSource.STEAM
-            containerId.startsWith("CUSTOM_GAME_") -> GameSource.CUSTOM_GAME
-            containerId.startsWith("GOG_") -> GameSource.GOG
-            containerId.startsWith("EPIC_") -> GameSource.EPIC
-            containerId.startsWith("AMAZON_") -> GameSource.AMAZON
-            // Add other platforms here..
-            else -> GameSource.STEAM // default fallback
-        }
+        return GameSource.fromContainerId(containerId) ?: GameSource.STEAM
     }
 
     fun isLocalSavesOnly(context: Context, appId: String): Boolean {
@@ -1790,6 +1803,7 @@ object ContainerUtils {
         GameSource.AMAZON,
         GameSource.CUSTOM_GAME,
         -> true
+        else -> StoreGames.isStore(gameSource)
     }
 
     /**
@@ -1804,6 +1818,7 @@ object ContainerUtils {
             GameSource.GOG -> GOGService.getGOGGameOf(gameId.toString())?.title
             GameSource.EPIC -> EpicService.getEpicGameOf(gameId)?.title
             GameSource.AMAZON -> AmazonService.getAmazonGameByAppId(gameId)?.title
+            GameSource.EA, GameSource.UBISOFT -> StoreGames.title(gameId)
             GameSource.CUSTOM_GAME -> {
                 val customAppId = "${GameSource.CUSTOM_GAME.name}_$gameId"
                 CustomGameScanner.getFolderPathFromAppId(customAppId)

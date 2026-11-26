@@ -1098,6 +1098,9 @@ abstract class BaseAppScreen {
             }
 
             ContainerUtils.applyToContainer(context, appId, html5Defaults)
+            // the storage of a page that runs at its own origin belongs to the container.
+            runCatching { app.gamenative.html5.host.Html5PageProfiles.remove(context, appId) }
+                .onFailure { Timber.tag("BaseAppScreen").w(it, "html5 page profile reset failed for $appId") }
 
             SnackbarManager.show(context.getString(R.string.library_container_reset_success))
         }
@@ -2029,6 +2032,7 @@ abstract class BaseAppScreen {
             app.gamenative.data.GameSource.GOG -> app.gamenative.service.gog.GOGService.getDownloadInfo(displayInfo.gameId.toString())
             app.gamenative.data.GameSource.CUSTOM_GAME -> null // Custom games don't support downloads yet
             app.gamenative.data.GameSource.AMAZON -> app.gamenative.service.amazon.AmazonService.getDownloadInfoByAppId(libraryItem.gameId)
+            else -> app.gamenative.service.store.StoreGames.downloadInfo(libraryItem.gameId)
         }
 
         DisposableEffect(libraryItem.appId) {
